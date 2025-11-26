@@ -2,7 +2,20 @@ import {
   pipeline,
   type TextGenerationPipeline,
 } from "@huggingface/transformers";
-import type { WorkerRequest, WorkerResponseError, WorkerResponseOk } from "../models/workerModels";
+import type {
+  WorkerRequest,
+  WorkerResponseError,
+  WorkerResponseOk,
+} from "../models/workerModels";
+
+interface ChatMessage {
+  role: string;
+  content: string;
+}
+
+interface Generation {
+  generated_text: ChatMessage[];
+}
 
 let commitPipelinePromise: Promise<TextGenerationPipeline> | null = null;
 
@@ -11,7 +24,7 @@ async function getCommitPipeline(): Promise<TextGenerationPipeline> {
     commitPipelinePromise = pipeline(
       "text-generation",
       "onnx-community/Qwen2.5-Coder-0.5B-Instruct",
-      { dtype: "q8" },
+      { dtype: "q8" }
     ) as Promise<TextGenerationPipeline>;
   }
   return commitPipelinePromise;
@@ -29,17 +42,17 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
 
     const messages = [
       {
-      role: "system",
-      content:
-        "You are an assistant that writes excellent Git commit messages.\n" +
-        "Given a diff, write a concise, high-quality commit message.\n" +
-        "Output only the commit message.\n" +
-        "If it is not a code diff or snipped, type: that's not even a code!!!.\n",
-    },
-    {
-      role: "user",
-      content: diffOrSnippet,
-    },
+        role: "system",
+        content:
+          "You are an assistant that writes excellent Git commit messages.\n" +
+          "Given a diff, write a concise, high-quality commit message.\n" +
+          "Output only the commit message.\n" +
+          "If it is not a code diff or snipped, type: that's not even a code!!!.\n",
+      },
+      {
+        role: "user",
+        content: diffOrSnippet,
+      },
     ];
 
     const result = await generator(messages, {
@@ -47,11 +60,10 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
       do_sample: false,
     });
 
-
     let msg: string | undefined;
 
     try {
-      msg = (result as any)[0]?.generated_text?.at(-1)?.content;
+      msg = (result as Generation[])[0]?.generated_text?.at(-1)?.content;
     } catch {
       msg = undefined;
     }
@@ -75,7 +87,8 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
       type: "result",
       id,
       status: "error",
-      error: err instanceof Error ? err.message : "Unknown error in commit worker",
+      error:
+        err instanceof Error ? err.message : "Unknown error in commit worker",
     };
 
     self.postMessage(response);
