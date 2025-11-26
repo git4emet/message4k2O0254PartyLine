@@ -1,73 +1,107 @@
-# React + TypeScript + Vite
+# 🧠 Friendly Commits  
+Generate smart commit messages from git diffs or code — fully on-device.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Friendly Commits is a tiny web app that takes a git diff or code snippet and generates a clean, accurate commit message using:
 
-Currently, two official plugins are available:
+- **Transformers.js**
+- **Qwen2.5-Coder-0.5B-Instruct (ONNX)**
+- **Web Workers** (AI runs off the main thread)
+- **React + Vite + Tailwind**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Everything runs **100% locally in your browser** — no API keys, no cloud, no servers.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📦 Features
 
-## Expanding the ESLint configuration
+- 🧠 **Local LLM inference** — Qwen model runs in-browser via ONNX  
+- ⚡ **Web Worker offloading** — the UI never freezes during inference  
+- 🎨 **Clean UI** built with Tailwind  
+- ✍️ **Conventional Commits** output (`feat`, `fix`, `refactor`, etc.)  
+- 🛡️ Automatic detection of invalid inputs  
+- 🔌 No backend, no cloud, no tracking
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🧰 Tech Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **React 18 + TypeScript**
+- **Vite**
+- **TailwindCSS**
+- **Transformers.js**
+- **ONNX Runtime (Web/WASM/WebGPU)**
+- **Web Workers**
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 📁 Project Structure
+
+src/
+logic/
+commitMessageModel.ts # Worker bridge (request/response)
+workers/
+commitWorker.ts # Qwen model loaded here
+App.tsx # UI
+main.tsx
+index.css
+
+## ▶️ Running Locally
+
+# Clone and install:
+
+```bash
+git clone https://github.com/<your-username>/friendly-commits.git
+cd friendly-commits
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+# Start dev server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+npm run dev
+```
+
+#Open:
+
+```
+http://localhost:5173
+```
+
+# 🏗️ Build
+
+```
+npm run build
+```
+
+# Preview production bundle:
+
+```
+npm run preview
+```
+
+## 🧠 How It Works
+
+A Web Worker loads
+Qwen2.5-Coder-0.5B-Instruct (ONNX) using Transformers.js
+
+The main UI sends diffs/snippets to the worker
+
+The worker generates a commit message using this prompt:
+
+- If input is not code or a diff → "This is not valid code or a git diff."
+- Otherwise → produce one-line commit message
+
+
+UI displays the result instantly without freezing
+
+## 🎯 Why On-Device AI?
+
+⚡ Zero latency
+
+🔒 No data leaves your machine
+
+💸 No tokens or API bills
+
+🧱 Works offline
+
+🧪 A perfect environment for experimenting with small LLMs
