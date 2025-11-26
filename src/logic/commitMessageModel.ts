@@ -1,48 +1,59 @@
-import {
-  pipeline,
-  type TextGenerationPipeline,
-} from "@huggingface/transformers";
+import type { WorkerRequest, WorkerResponse } from "../models/workerModels";
 
-let commitPipelinePromise: Promise<TextGenerationPipeline> | null = null;
+let worker: Worker | null = null;
 
-export async function getCommitPipeline(): Promise<TextGenerationPipeline> {
-  if (!commitPipelinePromise) {
-    commitPipelinePromise = pipeline(
-      "text-generation",
-      "onnx-community/Qwen2.5-Coder-0.5B-Instruct"
-    ) as Promise<TextGenerationPipeline>;
+const pending = new Map<
+  string,
+  { resolve: (value: string) => void; reject: (reason?: unknown) => void }
+>();
+
+function getWorker(): Worker {
+  if (!worker) {
+    worker = new Worker(
+      new URL("../workers/commitWorker.ts", import.meta.url),
+      { type: "module" }
+    );
+
+    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      const data = event.data;
+      if (!data || data.type !== "result") return;
+
+      const entry = pending.get(data.id);
+      if (!entry) return;
+      pending.delete(data.id);
+
+      if (data.status === "ok") {
+        entry.resolve(data.message);
+      } else {
+        entry.reject(new Error(data.error));
+      }
+    };
+
+    worker.onerror = (err) => {
+      console.error("[commitMessageModel] Worker error", err);
+      for (const [, { reject }] of pending) {
+        reject(new Error("Worker error"));
+      }
+      pending.clear();
+    };
   }
 
-  return commitPipelinePromise;
+  return worker;
 }
 
-export async function generateCommitMessage(
-  diffOrSnippet: string
-): Promise<string> {
-  const generator = await getCommitPipeline();
+export function generateCommitMessage(diffOrSnippet: string): Promise<string> {
+  const w = getWorker();
 
-  const messages = [
-    {
-      role: "system",
-      content:
-        "You are an assistant that writes excellent Git commit messages.\n" +
-        "Given a diff, write a concise, high-quality commit message.\n" +
-        "Output only the commit message.\n" +
-        "If it is not a code diff or snipped, type: that's not even a code!!!.\n",
-    },
-    {
-      role: "user",
-      content: diffOrSnippet,
-    },
-  ];
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  const result = await generator(messages, {
-    max_new_tokens: 128,
-    do_sample: false,
+  const message: WorkerRequest = {
+    type: "generate",
+    id,
+    diffOrSnippet,
+  };
+
+  return new Promise<string>((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+    w.postMessage(message);
   });
-
-  const msg =
-    Array.isArray(result) && result[0]?.generated_text?.at(-1)?.content;
-
-  return msg || "chore: update code";
 }
