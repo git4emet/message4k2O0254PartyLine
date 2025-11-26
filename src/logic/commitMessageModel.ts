@@ -27,7 +27,8 @@ export async function generateCommitMessage(
       content:
         "You are an assistant that writes excellent Git commit messages.\n" +
         "Given a diff, write a concise, high-quality commit message.\n" +
-        "Output only the commit message.",
+        "Output only the commit message.\n" +
+        "If it is not a code diff or snipped, type: that's not even a code!!!.\n",
     },
     {
       role: "user",
