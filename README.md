@@ -50,8 +50,8 @@ index.css
 # Clone and install:
 
 ```bash
-git clone https://github.com/<your-username>/friendly-commits.git
-cd friendly-commits
+git clone https://github.com/sylwia-lask/friendly-commit-messages.git
+cd friendly-commit-messages
 npm install
 ```
 
